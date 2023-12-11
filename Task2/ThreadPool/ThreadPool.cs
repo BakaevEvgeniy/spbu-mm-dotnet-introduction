@@ -6,7 +6,6 @@ public class ThreadPool : IDisposable
 {
     // private static ThreadPool _instance;
     private readonly int maxThreads_;
-    private readonly Thread[] threads;
     private readonly Queue<IBaseTask> tasksQueue_;
     private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
     private CancellationToken cancellationToken;
