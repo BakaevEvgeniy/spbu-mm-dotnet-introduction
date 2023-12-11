@@ -4,7 +4,6 @@ namespace ThreadPool;
 
 public class ThreadPool : IDisposable
 {
-    // private static ThreadPool _instance;
     private readonly int maxThreads_;
     private readonly Queue<IBaseTask> tasksQueue_;
     private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
@@ -16,7 +15,6 @@ public class ThreadPool : IDisposable
     {
         cancellationToken = cancellationTokenSource.Token;
         maxThreads_ = maxThreads;
-        threads = new Thread[maxThreads];
         tasksQueue_ = new Queue<IBaseTask>();
 
         StartWorkerThreads();
