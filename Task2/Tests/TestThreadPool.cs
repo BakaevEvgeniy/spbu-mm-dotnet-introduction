@@ -14,7 +14,7 @@ public class TestThreadPool
         int expected = 0;
         for (int i = 0; i < 3000; i++) {
             int a = i;
-            MyTask<int> task = (MyTask<int>)new MyTask<int>(() => {return a;}, pool).ContinueWith<int>(x => result += x * x);
+            MyTask<int> task = (MyTask<int>)new MyTask<int>(() => {return a;}, pool).ContinueWith<int>(x => {lock (pool) {return result += x * x;}});
             pool.EnqueueTask(task);
             expected += a * a;
         }
@@ -49,7 +49,6 @@ public class TestThreadPool
         pool.EnqueueTask(task3);
         pool.EnqueueTask(task2);
         pool.EnqueueTask(task1);
-        Thread.Sleep(1000);
         Assert.AreEqual(2, task1.Result);
         Assert.AreEqual(4, task2.Result);
         Assert.AreEqual(8, task3.Result);
