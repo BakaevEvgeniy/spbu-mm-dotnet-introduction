@@ -8,7 +8,6 @@ public class ThreadPool : IDisposable
     private readonly Queue<IBaseTask> tasksQueue_;
     private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
     private CancellationToken cancellationToken;
-    private static Mutex mut_ = new Mutex();
     private bool disposed_;
 
     public ThreadPool(int maxThreads) 
@@ -22,16 +21,17 @@ public class ThreadPool : IDisposable
 
     public void EnqueueTask(IBaseTask task)
     {
-        mut_.WaitOne();
+        Monitor.Enter(tasksQueue_);
         tasksQueue_.Enqueue(task);
-        mut_.ReleaseMutex();
+        Monitor.PulseAll(tasksQueue_);
+        Monitor.Exit(tasksQueue_);
     }
 
     public void Dispose()
     {
         if (!disposed_)
         {
-            mut_.WaitOne();
+            Monitor.Enter(tasksQueue_);
             for (int i = 0; i < tasksQueue_.Count; i++)
             {
                 var task = tasksQueue_.Dequeue();
@@ -39,7 +39,9 @@ public class ThreadPool : IDisposable
             }
             cancellationTokenSource.Cancel();
             disposed_ = true;
-            mut_.ReleaseMutex();
+            // signal to threads inside TaskExecutionLoop to finish loop
+            Monitor.PulseAll(tasksQueue_);
+            Monitor.Exit(tasksQueue_);
         }
     }
 
@@ -58,14 +60,19 @@ public class ThreadPool : IDisposable
         {
             try
             {
-                mut_.WaitOne();
+                // go in only if new task has added (or pool is disposed)
+                Monitor.Enter(tasksQueue_);
                 IBaseTask task;
                 
                 if (tasksQueue_.TryDequeue(out task))
                 {
+                    Monitor.Exit(tasksQueue_);
                     task.Run();
                 }
-                mut_.ReleaseMutex();
+                else
+                {
+                    Monitor.Exit(tasksQueue_);
+                }
             }
             catch (Exception ex)
             {
