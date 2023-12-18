@@ -60,7 +60,6 @@ public class ThreadPool : IDisposable
         {
             try
             {
-                // go in only if new task has added (or pool is disposed)
                 Monitor.Enter(tasksQueue_);
                 IBaseTask task;
                 
@@ -71,6 +70,8 @@ public class ThreadPool : IDisposable
                 }
                 else
                 {
+                    // wait until EnqueueTask pulse
+                    Monitor.Wait(tasksQueue_);
                     Monitor.Exit(tasksQueue_);
                 }
             }
